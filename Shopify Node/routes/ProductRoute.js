@@ -2,7 +2,8 @@ const express = require('express')
 const router = express.Router()
 const {createProduct, DeleteProduct,
     UpdateProduct,allProduct,
-    getSingleProduct} = require('../controllers/ProductController')
+    getSingleProduct,  addedWishList,
+    rating} = require('../controllers/ProductController')
 const { AuthMiddleware,  isAdmin} = require('../middlewares/AuthMiddleware')
 
 
@@ -11,5 +12,7 @@ router.patch('/:id', AuthMiddleware, isAdmin, UpdateProduct)
 router.delete('/:id', AuthMiddleware, isAdmin, DeleteProduct)
 router.get('/all',  allProduct)
 router.get('/:id', getSingleProduct)
+router.put('/wishlist', AuthMiddleware,  addedWishList)
+router.put('/rating', AuthMiddleware, rating) 
 
 module.exports = router

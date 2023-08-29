@@ -1,4 +1,5 @@
 const Product = require('../models/ProductModel')
+const User = require('../models/userModel')
 const {CustomAPIError, UnauthenticatedError, 
     BadRequestError, NotFoundError} = require('../errors/index');
 
@@ -108,12 +109,78 @@ const DeleteProduct = async (req, res) => {
       throw new CustomAPIError('Failed to delete product', 500);
     }
   }
+
+  const addedWishList = async (req, res) => {
+    try {
+      const { product_id } = req.body;
+      const { _id: UserId } = req.user;
+  
+      const user = await User.findById(UserId);
+  
+      const alreadyWishListed = user.wishList.find((productId) => productId.toString() === product_id.toString());
+  
+      if (alreadyWishListed) {
+        const updatedWishList = await User.findByIdAndUpdate(
+          UserId,
+          { $pull: { wishList: product_id } },
+          { new: true, runValidators: true }
+        );
+        res.json(updatedWishList);
+      } else {
+        const updatedWishList = await User.findByIdAndUpdate(
+          UserId,
+          { $push: { wishList: product_id } },
+          { new: true, runValidators: true }
+        );
+        res.json(updatedWishList);
+      }
+    } catch (error) {
+      throw new CustomAPIError(error, 404);
+    }
+  };
+
+  const rating = async (req, res) => {
+    try {
+      const { rating_id, star } = req.body;
+      const { _id: UserId } = req.user;
+  
+      const product = await Product.findById(rating_id);
+  
+      const ratedProduct = product.ratings.find((ratingId) => ratingId.postedby.toString() === UserId.toString());
+  
+      if (ratedProduct) {
+        const updateRating = await Product.updateOne(
+          { 'ratings._id': ratedProduct._id },
+          { $set: { 'ratings.$.star': star } },
+          { new: true, runValidators: true }
+        );
+        res.json(updateRating);
+      } else {
+        const rate = await Product.findByIdAndUpdate(
+          rating_id,
+          {
+            $push: {
+              ratings: {
+                star: star,
+                postedby: UserId,
+              },
+            },
+          },
+          { new: true, runValidators: true }
+        );
+        res.json(rate);
+      }
+    } catch (error) {
+      throw new CustomAPIError(error, 404);
+    }
+  };
+
 module.exports = {
     createProduct,
     DeleteProduct,
     UpdateProduct,
     allProduct,
-    getSingleProduct
-
-
+    getSingleProduct,
+    addedWishList,
+    rating
 }
